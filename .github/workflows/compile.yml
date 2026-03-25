@@ -1,4 +1,4 @@
-name: Build AwemeBypass Tweak
+name: Compile Tweak
 
 on:
   push:
@@ -6,29 +6,36 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  compile:
     runs-on: macos-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup Theos & Dependencies
-      run: |
-        brew install ldid
-        git clone --depth 1 https://github.com/theos/theos.git ~/theos
-        echo "THEOS=~/theos" >> $GITHUB_ENV
-        echo "~/theos/bin" >> $GITHUB_PATH
-        # 下载 iOS SDK
-        mkdir -p ~/theos/sdks
-        curl -L https://github.com/theos/sdks/archive/refs/heads/master.tar.gz | tar -xz -C ~/theos/sdks --strip-components=1
+      - name: Setup Theos
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+          eval "$(/opt/homebrew/bin/brew shellenv)"
+          brew install ldid xz git
+          export THEOS=~/theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS
+          cd $THEOS/sdks
+          curl -LO https://github.com/theos/sdks/archive/master.zip
+          unzip master.zip
+          mv sdks-master/*.sdk .
+          rm -rf sdks-master master.zip
 
-    - name: Build Package
-      run: |
-        make clean
-        make package
+      - name: Compile
+        run: |
+          export THEOS=~/theos
+          export PATH=$THEOS/bin:$PATH
+          cd "${{ github.workspace }}"
+          make clean
+          make package
+          for f in packages/*.deb; do mv "$f" AwemeBypass.deb; break; done
 
-    - name: Upload Deb
-      uses: actions/upload-artifact@v4
-      with:
-        name: AwemeBypass
-        path: packages/*.deb
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: AwemeBypass
+          path: AwemeBypass.deb
