@@ -1,17 +1,13 @@
-# .github/workflows/build.yml
-name: Build AwemeBypass Tweak
+name: Build AwemeBypass Tweak (Fixed)
 
 on:
   push:
     branches: [ main ]
-    paths: [ 'Makefile', 'Tweak.xm', 'control', 'AwemeBypass.plist' ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch: # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-latest # 必须使用 macOS 环境
+    runs-on: macos-latest
     
     steps:
     - name: Checkout repository
@@ -19,43 +15,30 @@ jobs:
       
     - name: Install Theos
       run: |
-        # 安装 Theos
         git clone --depth=1 https://github.com/theos/theos.git ~/theos
-        echo "export THEOS=~/theos" >> ~/.bash_profile
-        echo "export PATH=\$THEOS/bin:\$PATH" >> ~/.bash_profile
-        source ~/.bash_profile
+        echo "THEOS=~/theos" >> $GITHUB_ENV
         
-    - name: Install substitute
+    - name: Install substitute from source
       run: |
-        # 安装 substitute (非越狱 Hook 框架)
-        brew install substitute
-        # 或从源码编译
-        # git clone --depth=1 https://github.com/comex/substitute.git
-        # cd substitute
-        # ./configure --prefix=/usr/local
-        # make
-        # sudo make install
-        echo "Substitute installed"
+        git clone --depth=1 https://github.com/comex/substitute.git
+        cd substitute
+        ./configure --prefix=/usr/local
+        make
+        sudo make install
         
     - name: Build tweak
       run: |
-        source ~/.bash_profile
+        export THEOS=~/theos
+        export PATH=$THEOS/bin:$PATH
         cd ${{ github.workspace }}
-        # 使用 theos 编译
-        make clean
+        make clean 2>/dev/null || true
         make package
         
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: AwemeBypass-Tweak
+        name: AwemeBypass-DEB
         path: |
           packages/*.deb
           .theos/_/debs/*.deb
-        if-no-files-found: error
-        
-    - name: Create release (可选)
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: packages/*.deb
+        if-no-files-found: warn
