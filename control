@@ -1,0 +1,16 @@
+# Control file for AwemeBypass Tweak (Non-Jailbreak)
+Package: com.duo.awemebypass
+Name: AwemeBypass
+Version: 1.0.1
+Architecture: iphoneos-arm
+Description: 绕过抖音版本检查，防止升级弹窗，支持非越狱注入
+Maintainer: duo
+Author: duo
+Section: Tweaks
+Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 11.0)
+Conflicts: 
+Replaces: 
+Icon: 
+Homepage: 
+Depiction: 
+Tag: purpose::extension, compatible_min::ios11.0

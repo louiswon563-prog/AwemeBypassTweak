@@ -1,0 +1,10 @@
+{
+    Filter = {
+        Bundles = (
+            "com.ss.iphone.ugc.aweme.mobile"
+        );
+        Executables = (
+            AwemeHM
+        );
+    };
+}
