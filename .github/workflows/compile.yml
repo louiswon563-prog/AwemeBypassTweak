@@ -1,4 +1,4 @@
-name: Build AwemeBypass Tweak (Fixed)
+name: Build AwemeBypass Tweak
 
 on:
   push:
@@ -8,37 +8,42 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      
-    - name: Install Theos
-      run: |
-        git clone --depth=1 https://github.com/theos/theos.git ~/theos
-        echo "THEOS=~/theos" >> $GITHUB_ENV
-        
-    - name: Install substitute from source
-      run: |
-        git clone --depth=1 https://github.com/comex/substitute.git
-        cd substitute
-        ./configure --prefix=/usr/local
-        make
-        sudo make install
-        
-    - name: Build tweak
-      run: |
-        export THEOS=~/theos
-        export PATH=$THEOS/bin:$PATH
-        cd ${{ github.workspace }}
-        make clean 2>/dev/null || true
-        make package
-        
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: AwemeBypass-DEB
-        path: |
-          packages/*.deb
-          .theos/_/debs/*.deb
-        if-no-files-found: warn
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          # 只安装真正必须的工具：ldid（签名用）和 git（拉取代码用）
+          brew install ldid git
+
+      - name: Setup Theos
+        run: |
+          # 安装 Theos 构建工具
+          brew install make
+          
+          # 下载最新版 Theos
+          export THEOS=$GITHUB_WORKSPACE/theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS
+          
+          # 下载最新的 SDK（针对 iOS 15+ 架构）
+          mkdir -p $THEOS/sdks
+          curl -L https://github.com/theos/sdks/archive/refs/heads/master.tar.gz | tar -xz -C $THEOS/sdks --strip-components=1
+          
+          # 配置环境变量
+          echo "THEOS=$THEOS" >> $GITHUB_ENV
+          echo "$THEOS/bin" >> $GITHUB_PATH
+
+      - name: Build Package
+        run: |
+          # 直接进入工作目录执行编译
+          make clean
+          make package
+          
+          # 查找生成的 deb 文件并命名
+          find . -name "*.deb" -exec cp {} ./AwemeBypass.deb \;
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AwemeBypass
+          path: AwemeBypass.deb
