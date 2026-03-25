@@ -1,0 +1,61 @@
+# .github/workflows/build.yml
+name: Build AwemeBypass Tweak
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'Makefile', 'Tweak.xm', 'control', 'AwemeBypass.plist' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build:
+    runs-on: macos-latest # 必须使用 macOS 环境
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Install Theos
+      run: |
+        # 安装 Theos
+        git clone --depth=1 https://github.com/theos/theos.git ~/theos
+        echo "export THEOS=~/theos" >> ~/.bash_profile
+        echo "export PATH=\$THEOS/bin:\$PATH" >> ~/.bash_profile
+        source ~/.bash_profile
+        
+    - name: Install substitute
+      run: |
+        # 安装 substitute (非越狱 Hook 框架)
+        brew install substitute
+        # 或从源码编译
+        # git clone --depth=1 https://github.com/comex/substitute.git
+        # cd substitute
+        # ./configure --prefix=/usr/local
+        # make
+        # sudo make install
+        echo "Substitute installed"
+        
+    - name: Build tweak
+      run: |
+        source ~/.bash_profile
+        cd ${{ github.workspace }}
+        # 使用 theos 编译
+        make clean
+        make package
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: AwemeBypass-Tweak
+        path: |
+          packages/*.deb
+          .theos/_/debs/*.deb
+        if-no-files-found: error
+        
+    - name: Create release (可选)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: packages/*.deb
